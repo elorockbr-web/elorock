@@ -47,34 +47,34 @@
   inset:0;
   display:grid;
   place-items:center;
-  background: #000; /* totalmente preto */
+  background: rgba(0, 0, 0, 0.65); /* translucido escuro */
+  backdrop-filter: blur(6px);      /* efeito vidro */
+  -webkit-backdrop-filter: blur(6px);
   cursor:pointer;
   z-index: 999;
 }
 
 .gateCard{
-  padding: 14px 18px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.22);
+  padding: 18px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.18);
   background: rgba(0,0,0,.35);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   text-align: center;
-  user-select:none;
-  box-shadow: 0 8px 28px rgba(0,0,0,.45);
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
 }
 
 .gateTitle{
   font-weight: 800;
-  font-size: 18px;
-  letter-spacing: .5px;
+  font-size: 20px;
   color: rgba(255,255,255,.95);
 }
 
 .gateSub{
-  margin-top: 4px;
-  font-weight: 600;
-  font-size: 13px;
-  color: rgba(255,255,255,.78);
+  margin-top: 6px;
+  font-size: 14px;
+  color: rgba(255,255,255,.75);
 }
     
   </style>
