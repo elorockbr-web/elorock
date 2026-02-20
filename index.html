@@ -45,20 +45,26 @@
 .gate{
   position:absolute;
   inset:0;
-  display:grid;
-  place-items:center;
-  background: rgba(0, 0, 0, 0.55); /* translucido escuro */
-  backdrop-filter: blur(6px);      /* efeito vidro */
-  -webkit-backdrop-filter: blur(6px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,0.82);      /* mais escuro */
+  backdrop-filter: blur(16px);       /* bem difuso */
+  -webkit-backdrop-filter: blur(12px);
   cursor:pointer;
   z-index: 999;
+  text-align:center;
+  color: rgba(255,255,255,.92);
+  font-weight:700;
+  letter-spacing:0.5px;
 }
 
 .gateCard{
   padding: 18px 22px;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,.55);
-  background: rgba(0,0,0,.35);
+  background: rgba(0,0,0,.55);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   text-align: center;
@@ -86,10 +92,10 @@
 
     <!-- Overlay de ativação (obrigatório pra liberar áudio no celular) -->
    <!-- overlay de 1º clique (tela inteira) -->
-<div class="gate" id="gate" aria-label="Ativar sons">
-  <div class="gateCard">
-    <div class="gateTitle">Elo Rock</div>
-    <div class="gateSub">Clique para entrar</div>
+<div class="gate" id="gate">
+  <div style="font-size:22px;">Elo Rock</div>
+  <div style="margin-top:6px; font-size:14px; opacity:.75;">
+    Clique para entrar
   </div>
 </div>
   
