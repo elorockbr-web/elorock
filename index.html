@@ -42,23 +42,39 @@
       /*background: rgba(255,0,0,.18); */ /* descomente p/ ver os botões */
     }
 
-    .gate{
-      position:absolute;
-      inset:0;
-      background: transparent;
-      cursor: pointer;
-      z-index: 10;
-    }
+.gate{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background: rgba(0,0,0,.18);   /* escurece levemente */
+  cursor:pointer;
+  z-index: 10;
+}
 
-.gateText{
-  padding:10px 14px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.25);
-  background:rgba(0,0,0,.35);
-  color:rgba(255,255,255,.9);
-  font-weight:700;
-  backdrop-filter:blur(6px);
+.gateCard{
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(8px);
+  text-align: center;
   user-select:none;
+  box-shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+
+.gateTitle{
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: .5px;
+  color: rgba(255,255,255,.95);
+}
+
+.gateSub{
+  margin-top: 4px;
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(255,255,255,.78);
 }
     
   </style>
@@ -69,7 +85,13 @@
     <div class="screen"></div>
 
     <!-- Overlay de ativação (obrigatório pra liberar áudio no celular) -->
-   <div class="gate" id="gate" aria-label="Ativar sons"></div>
+   <!-- overlay de 1º clique (tela inteira) -->
+<div class="gate" id="gate" aria-label="Ativar sons">
+  <div class="gateCard">
+    <div class="gateTitle">Elo Rock</div>
+    <div class="gateSub">Clique para entrar</div>
+  </div>
+</div>
   
     <!-- HOTSPOTS (já posicionados para sua imagem bg.png) -->
     <div class="hotspot" style="left:36.98%; top:58.98%; width:30.56%; height:5.81%;" data-link="LINK_DO_DRIVE_AGENDA"></div>
