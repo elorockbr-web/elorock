@@ -39,14 +39,12 @@
     }
 
     .gate{
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-  background: rgba(0,0,0,.01); /* quase invisível */
-  cursor:pointer;
-  z-index: 10;
-}
+      position:absolute;
+      inset:0;
+      background: transparent;
+      cursor: pointer;
+      z-index: 10;
+    }
 
 .gateText{
   padding:10px 14px;
@@ -65,35 +63,19 @@
 <body>
   <div class="wrap">
     <div class="screen"></div>
+
+    <!-- Overlay de ativação (obrigatório pra liberar áudio no celular) -->
+   <div class="gate" id="gate" aria-label="Ativar sons"></div>
   
     <!-- HOTSPOTS (já posicionados para sua imagem bg.png) -->
-    <!-- Agenda -->
-    <div class="hotspot"
-      style="left:36.98%; top:58.98%; width:30.56%; height:5.81%;"
-      data-link="LINK_DO_DRIVE_AGENDA">
-    </div>
-
-    <!-- Contrate -->
-    <div class="hotspot"
-      style="left:36.98%; top:65.48%; width:30.56%; height:5.76%;"
-      data-link="LINK_DO_DRIVE_CONTRATE">
-    </div>
-
-    <!-- Mídia -->
-    <div class="hotspot"
-      style="left:36.89%; top:72.07%; width:30.47%; height:5.76%;"
-      data-link="LINK_DO_DRIVE_MIDIA">
-    </div>
-
-    <!-- Ingressos -->
-    <div class="hotspot"
-      style="left:36.89%; top:78.86%; width:30.47%; height:5.76%;"
-      data-link="LINK_DO_DRIVE_INGRESSOS">
-    </div>
+    <div class="hotspot" style="left:36.98%; top:58.98%; width:30.56%; height:5.81%;" data-link="LINK_DO_DRIVE_AGENDA"></div>
+    <div class="hotspot" style="left:36.98%; top:65.48%; width:30.56%; height:5.76%;" data-link="LINK_DO_DRIVE_CONTRATE"></div>
+    <div class="hotspot" style="left:36.89%; top:72.07%; width:30.47%; height:5.76%;" data-link="LINK_DO_DRIVE_MIDIA"></div>
+    <div class="hotspot" style="left:36.89%; top:78.86%; width:30.47%; height:5.76%;" data-link="LINK_DO_DRIVE_INGRESSOS"></div>
   </div>
 
-  <!-- Sons (mantendo nomes originais) -->
-  <audio class="sfx_ambient" src="online.wav" preload="auto"></audio>
+  <!-- Sons automáticos (apenas estes 4) -->
+  <audio id="sfx_online" class="sfx_ambient" src="online.wav" preload="auto"></audio>
   <audio class="sfx_ambient" src="newemail.wav" preload="auto"></audio>
   <audio class="sfx_ambient" src="nudge.wav" preload="auto"></audio>
   <audio class="sfx_ambient" src="type.wav" preload="auto"></audio>
@@ -106,70 +88,81 @@
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
- function pickRandomAmbient(){
-  const sounds = [
-    { el: document.querySelector('audio[src="online.wav"]'), weight: 3 },
-    { el: document.querySelector('audio[src="newemail.wav"]'), weight: 1 },
-    { el: document.querySelector('audio[src="nudge.wav"]'), weight: 2 },
-    { el: document.querySelector('audio[src="type.wav"]'), weight:  4}
-  ];
-  const totalWeight = sounds.reduce((sum, s) => sum + s.weight, 0);
-  let random = Math.random() * totalWeight;
+  function pickRandomAmbientWeighted(){
+      // OBS: usamos seletor por src, mas também fazemos fallback para não retornar null.
+      const sounds = [
+        { el: document.querySelector('audio[src="online.wav"]'),   weight: 3 },
+        { el: document.querySelector('audio[src="newemail.wav"]'), weight: 1 },
+        { el: document.querySelector('audio[src="nudge.wav"]'),    weight: 2 },
+        { el: document.querySelector('audio[src="type.wav"]'),     weight: 4 }
+      ].filter(s => s.el);
 
-  for (let s of sounds) {
-    if (random < s.weight) return s.el;
-    random -= s.weight;
-  }
-}
+      // fallback (caso algum querySelector falhe)
+      if (!sounds.length) {
+        const all = Array.from(document.querySelectorAll("audio.sfx_ambient"));
+        return all[Math.floor(Math.random() * all.length)] || null;
+      }
 
-  async function playSafe(audioEl){
-    try{
-      audioEl.volume = 1.0;      // volume máximo no play real
-      audioEl.currentTime = 0;
-      await audioEl.play();
-    } catch(e) {}
-  }
+      const totalWeight = sounds.reduce((sum, s) => sum + s.weight, 0);
+      let r = Math.random() * totalWeight;
 
-  function scheduleAmbience(){
-    if (!audioEnabled) return;
+      for (const s of sounds) {
+        if (r < s.weight) return s.el;
+        r -= s.weight;
+      }
+      return sounds[0].el; // fallback extra
+    }
 
-    const nextMs = rand(3000, 5000);
-    ambienceTimer = setTimeout(async () => {
-      if (!audioEnabled) return;
-      await playSafe(pickRandomAmbient());
-      scheduleAmbience();
-    }, nextMs);
-  }
-
-  // “prime” (arma) os áudios no primeiro toque (melhora MUITO no celular)
-  async function primeAudios(){
-    const all = [
-      document.getElementById("sfx_ambient"),
-      ...Array.from(document.querySelectorAll("audio.sfx_ambient"))
-    ].filter(Boolean);
-
-    for (const a of all){
+ async function playSafe(audioEl){
+      if (!audioEl) return;
       try{
-        const oldVol = a.volume;
-        // Se você não quiser o "quase mudo", pode trocar 0.001 por 1.0
-        a.volume = 0.001;
-        a.currentTime = 0;
-        await a.play();
-        a.pause();
-        a.currentTime = 0;
-        a.volume = oldVol;
+        audioEl.volume = 1.0; // máximo (o usuário ajusta no celular)
+        audioEl.currentTime = 0;
+        await audioEl.play();
       } catch(e) {}
     }
-  }
 
-  const gate = document.getElementById("gate");
-  gate.addEventListener("click", async () => {
-    audioEnabled = true;
-    await primeAudios();
-    await playSafe(document.getElementById("sfx_enter")); // som “online” alto
-    gate.style.display = "none";
-    scheduleAmbience();
-  });
+    function scheduleAmbience(){
+      if (!audioEnabled) return;
+
+      const nextMs = rand(3000, 5000);
+      ambienceTimer = setTimeout(async () => {
+        if (!audioEnabled) return;
+        await playSafe(pickRandomAmbientWeighted());
+        scheduleAmbience();
+      }, nextMs);
+    }
+
+    // “prime” (arma) os áudios no primeiro toque (melhora MUITO em celular)
+    async function primeAudios(){
+      const all = Array.from(document.querySelectorAll("audio.sfx_ambient")).filter(Boolean);
+
+      for (const a of all){
+        try{
+          const oldVol = a.volume;
+          a.volume = 0.001;   // só para “armar” sem estourar som no primeiro toque
+          a.currentTime = 0;
+          await a.play();
+          a.pause();
+          a.currentTime = 0;
+          a.volume = oldVol;  // volta (e no play real vai a 1.0)
+        } catch(e) {}
+      }
+    }
+
+    // Ativa áudio com 1 toque no overlay
+    const gate = document.getElementById("gate");
+    gate.addEventListener("click", async () => {
+      audioEnabled = true;
+
+      await primeAudios();
+
+      // toca um som imediato (online) e remove o overlay
+      await playSafe(document.getElementById("sfx_online"));
+      gate.style.display = "none";
+
+      scheduleAmbience();
+    });
 
   // Hotspots: só abre link (sem som)
   document.querySelectorAll(".hotspot").forEach(el => {
