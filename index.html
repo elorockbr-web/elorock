@@ -32,7 +32,7 @@
     .hotspot{
       position:absolute;
       cursor:pointer;
-      background: rgba(255,0,0,.18); */ /* descomente p/ ver os botões */
+      /*background: rgba(255,0,0,.18); */ /* descomente p/ ver os botões */
     }
 
     .enter{
@@ -50,13 +50,39 @@
       user-select:none;
     }
     .enter small{display:block; opacity:.75; font-weight:500;}
+
+    .gate{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background: rgba(0,0,0,.01); /* quase invisível */
+  cursor:pointer;
+  z-index: 10;
+}
+
+.gateText{
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(0,0,0,.35);
+  color:rgba(255,255,255,.9);
+  font-weight:700;
+  backdrop-filter:blur(6px);
+  user-select:none;
+}
+    
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <div class="screen"></div>
-
+    
+    <div class="gate" id="gate">
+        <div class="gateText">Toque para conectar</div>
+    </div>
+    
     <!-- Clique “Entrar” só para liberar áudio (bloqueio normal do navegador) -->
     <div class="enter" id="enterBtn">Entrar<small>(ativa sons)</small></div>
 
@@ -87,45 +113,76 @@
   </div>
 
   <!-- Sons (mantendo nomes originais) -->
-  <audio id="sfx_enter" src="online.mp3" preload="auto"></audio>
-
-  <audio class="sfx_click" src="newalert.wav" preload="auto"></audio>
-  <audio class="sfx_click" src="newemail.wav" preload="auto"></audio>
-  <audio class="sfx_click" src="nudge.wav" preload="auto"></audio>
-  <audio class="sfx_click" src="phone.wav" preload="auto"></audio>
-  <audio class="sfx_click" src="ring.wav" preload="auto"></audio>
-  <audio class="sfx_click" src="type.wav" preload="auto"></audio>
-  <audio class="sfx_click" src="vimdone.wav" preload="auto"></audio>
+  <audio class="sfx_ambient" src="online.mp3" preload="auto"></audio>
+  <audio class="sfx_ambient" src="newemail.wav" preload="auto"></audio>
+  <audio class="sfx_ambient" src="nudge.wav" preload="auto"></audio>
+  <audio class="sfx_ambient" src="type.wav" preload="auto"></audio>
 
   <script>
-    let audioEnabled = false;
+  let audioEnabled = false;
+  let ambienceTimer = null;
 
-    function pickRandomClick(){
-      const list = Array.from(document.querySelectorAll("audio.sfx_click"));
-      return list[Math.floor(Math.random()*list.length)];
-    }
+  function rand(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
 
-    async function playSafe(audioEl){
-      try{
-        audioEl.currentTime = 0;
-        await audioEl.play();
-      } catch(e) {}
-    }
+  function pickRandomAmbient(){
+    const list = Array.from(document.querySelectorAll("audio.sfx_ambient"));
+    return list[Math.floor(Math.random() * list.length)];
+  }
 
-    document.getElementById("enterBtn").addEventListener("click", async () => {
-      audioEnabled = true;
-      await playSafe(document.getElementById("sfx_enter"));
-    });
+  async function playSafe(audioEl){
+    try{
+      audioEl.currentTime = 0;
+      await audioEl.play();
+    } catch(e) {}
+  }
 
-    document.querySelectorAll(".hotspot").forEach(el => {
-      el.addEventListener("click", async () => {
-        const link = el.dataset.link;
-        if(!link || link.startsWith("LINK_")) return;
+  // agenda o “ambiente” de sons aleatórios
+  function scheduleAmbience(){
+    if (!audioEnabled) return;
 
-        if(audioEnabled) await playSafe(pickRandomClick());
-        window.open(link, "_blank", "noopener,noreferrer");
-      });
-    });
-  </script>
+    // intervalo aleatório (ex: 8s a 25s)
+    const nextMs = rand(8000, 25000);
+
+    ambienceTimer = setTimeout(async () => {
+      if (!audioEnabled) return;
+
+      // chance de tocar (pra não ficar barulhento demais)
+      const chance = Math.random(); // 0..1
+      if (chance < 0.85) { // 85% das vezes toca
+        await playSafe(pickRandomAmbient());
+      }
+
+      scheduleAmbience();
+    }, nextMs);
+  }
+
+  // “desbloqueia” áudio com 1 toque
+  const gate = document.getElementById("gate");
+  gate.addEventListener("click", async () => {
+    audioEnabled = true;
+
+    // truque padrão: toca um som curtinho pra liberar a política do navegador
+    const enter = document.getElementById("sfx_enter");
+    await playSafe(enter);
+
+    // some com o overlay
+    gate.style.display = "none";
+
+    // começa os sons aleatórios sozinhos
+    scheduleAmbience();
+  });
+
+  // Hotspots: toca som e abre link
+document.querySelectorAll(".hotspot").forEach(el => {
+  el.addEventListener("click", () => {
+    const link = el.dataset.link;
+    if(!link || link.startsWith("LINK_")) return;
+
+    window.open(link, "_blank", "noopener,noreferrer");
+  });
+});
+</script>
 </body>
 </html>
