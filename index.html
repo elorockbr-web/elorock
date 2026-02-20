@@ -35,22 +35,6 @@
       /*background: rgba(255,0,0,.18); */ /* descomente p/ ver os botões */
     }
 
-    .enter{
-      position:absolute;
-      left:50%; top:55%;
-      transform:translateX(-50%);
-      padding:10px 14px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.25);
-      background:rgba(0,0,0,.35);
-      color:rgba(255,255,255,.9);
-      font-weight:700;
-      backdrop-filter:blur(6px);
-      cursor:pointer;
-      user-select:none;
-    }
-    .enter small{display:block; opacity:.75; font-weight:500;}
-
     .gate{
   position:absolute;
   inset:0;
@@ -83,9 +67,6 @@
         <div class="gateText">Toque para conectar</div>
     </div>
     
-    <!-- Clique “Entrar” só para liberar áudio (bloqueio normal do navegador) -->
-    <div class="enter" id="enterBtn">Entrar<small>(ativa sons)</small></div>
-
     <!-- HOTSPOTS (já posicionados para sua imagem bg.png) -->
     <!-- Agenda -->
     <div class="hotspot"
@@ -113,7 +94,7 @@
   </div>
 
   <!-- Sons (mantendo nomes originais) -->
-  <audio class="sfx_ambient" src="online.mp3" preload="auto"></audio>
+  <audio class="sfx_ambient" src="online.wav" preload="auto"></audio>
   <audio class="sfx_ambient" src="newemail.wav" preload="auto"></audio>
   <audio class="sfx_ambient" src="nudge.wav" preload="auto"></audio>
   <audio class="sfx_ambient" src="type.wav" preload="auto"></audio>
@@ -133,56 +114,61 @@
 
   async function playSafe(audioEl){
     try{
+      audioEl.volume = 1.0;      // volume máximo no play real
       audioEl.currentTime = 0;
       await audioEl.play();
     } catch(e) {}
   }
 
-  // agenda o “ambiente” de sons aleatórios
   function scheduleAmbience(){
     if (!audioEnabled) return;
 
-    // intervalo aleatório (ex: 8s a 25s)
-    const nextMs = rand(8000, 25000);
-
+    const nextMs = rand(5000, 10000);
     ambienceTimer = setTimeout(async () => {
       if (!audioEnabled) return;
-
-      // chance de tocar (pra não ficar barulhento demais)
-      const chance = Math.random(); // 0..1
-      if (chance < 0.85) { // 85% das vezes toca
-        await playSafe(pickRandomAmbient());
-      }
-
+      await playSafe(pickRandomAmbient());
       scheduleAmbience();
     }, nextMs);
   }
 
-  // “desbloqueia” áudio com 1 toque
+  // “prime” (arma) os áudios no primeiro toque (melhora MUITO no celular)
+  async function primeAudios(){
+    const all = [
+      document.getElementById("sfx_ambient"),
+      ...Array.from(document.querySelectorAll("audio.sfx_ambient"))
+    ].filter(Boolean);
+
+    for (const a of all){
+      try{
+        const oldVol = a.volume;
+        // Se você não quiser o "quase mudo", pode trocar 0.001 por 1.0
+        a.volume = 0.001;
+        a.currentTime = 0;
+        await a.play();
+        a.pause();
+        a.currentTime = 0;
+        a.volume = oldVol;
+      } catch(e) {}
+    }
+  }
+
   const gate = document.getElementById("gate");
   gate.addEventListener("click", async () => {
     audioEnabled = true;
-
-    // truque padrão: toca um som curtinho pra liberar a política do navegador
-    const enter = document.getElementById("sfx_enter");
-    await playSafe(enter);
-
-    // some com o overlay
+    await primeAudios();
+    await playSafe(document.getElementById("sfx_enter")); // som “online” alto
     gate.style.display = "none";
-
-    // começa os sons aleatórios sozinhos
     scheduleAmbience();
   });
 
-  // Hotspots: toca som e abre link
-document.querySelectorAll(".hotspot").forEach(el => {
-  el.addEventListener("click", () => {
-    const link = el.dataset.link;
-    if(!link || link.startsWith("LINK_")) return;
-
-    window.open(link, "_blank", "noopener,noreferrer");
+  // Hotspots: só abre link (sem som)
+  document.querySelectorAll(".hotspot").forEach(el => {
+    el.addEventListener("click", () => {
+      const link = el.dataset.link;
+      if(!link || link.startsWith("LINK_")) return;
+      window.open(link, "_blank", "noopener,noreferrer");
+    });
   });
-});
 </script>
 </body>
 </html>
